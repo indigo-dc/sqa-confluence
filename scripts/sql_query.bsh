@@ -1,0 +1,64 @@
+/**
+ * Run a simple SQL query using an application server data source for the Confluence instance. This gets a list of space names.
+ * Assumes: Script Plugin for Confluence 4.x or above
+ * Assumes: Confluence 4.1 or above
+ * Requires: Confluence server has an application server defined data source called confluenceDS for the Confluence database
+ * Wiki markup:
+ *   {beanshell:output=wiki|script=#https://bitbucket.org/bob_swift/examples/raw/tip/confluence/beanshell/sqlQuery.bsh}
+ *   {beanshell}
+ */
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import javax.naming.InitialContext;
+import javax.sql.DataSource;
+import javax.naming.NamingException;
+import javax.naming.NameNotFoundException;
+
+    String dataSource = "reportsDB";
+    String sql = "select * from reports.Persons";
+
+    DataSource ds = null;
+    Connection connection = null;
+    PreparedStatement statement = null;
+    ResultSet resultSet;
+
+    try {
+        ds = (DataSource) (new InitialContext()).lookup("java:comp/env/jdbc/" + dataSource);
+        connection = ds.getConnection();
+        statement = connection.prepareStatement(sql);
+
+        if (statement.execute()) {  // result set is available
+            resultSet = statement.getResultSet();
+            if (resultSet != null) {
+                ResultSetMetaData rsmd = resultSet.getMetaData();
+                // out.println("<br>Columns in result set: " + rsmd.getColumnCount());
+
+                out.println("<br>Space names: ");
+                while (resultSet.next()) {
+                    out.println("<br>&nbsp;&nbsp;" + resultSet.getString("FirstName"));
+                }
+            }
+        } else { // only update count available
+            out.println("Update count: " + statement.getUpdateCount());
+        }
+    } catch (NameNotFoundException exception) {
+        out.println(exception.toString());
+    } catch (NamingException exception) {
+        out.println(exception.toString());
+    } catch (SQLException exception) {
+        out.println(exception.toString());
+    } finally {
+        try {
+            if (resultSet != null) {
+                resultSet.close();
+            }
+            if (connection != null) {
+                connection.close();
+            }
+        } catch(Exception discard) {
+        }
+    }
